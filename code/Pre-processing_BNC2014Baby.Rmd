@@ -1,0 +1,325 @@
+---
+title: "Pre-processing of BNC2014 Baby+"
+author: "Elen Le Foll"
+date: "07/09/2021"
+output: html_document
+---
+
+Note that this .Rmd file cannot be run without having access to the BNC2014 Baby+ corpus, hence this part is not currently replicable until the BNC2014 Baby+ corpus is made available to the wider research community. It currently merely serves to show the methods that were used to pre-process the corpus data. Note also that it includes two chunks in python which require the reticulate package to be loaded and python to have been configured. Python users may prefer to simply copy the code into stand-alone python scripts.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(reticulate)
+library(stringr)
+library(tidyverse)
+library(tm)
+library(utf8)
+
+```
+
+## Diagnosistics of text encoding issues
+
+```{r check-encoding}
+
+# Check encoding of files originally sent by Vaclav Brezina
+library(stylo)
+check.encoding(corpus.dir = here("corpus", "BNC2014baby"), output.file = here("corpus", "encoding_report_BNC2014baby.csv"))
+
+encodingreport <- read.csv(file = here("corpus", "encoding_report_BNC2014baby.csv"), stringsAsFactors = TRUE) %>%   mutate(subregister = (as.factor(stringr::str_extract(file, "Acb|AcjH|AcjM|AcjN|AcjP|AcjS|AcjT|Fict|Mass|Reg|Ser|Em|Bl|ERe|Soc|For|Sm|Sp"))))
+
+summary(encodingreport)
+encodingreport %>% group_by(subregister, encoding) %>% count(.) %>% as.data.frame(.)
+
+```
+
+## Text encoding conversion
+
+With many thanks to @Jessica20119 for this solution posted on: https://stackoverflow.com/questions/65074479/converting-all-text-files-with-multiple-encodings-in-a-directory-into-a-utf-8-en
+
+```{python convert-encoding}
+
+from glob import glob
+from os import path
+import os, codecs
+import chardet, re
+
+
+# directory in which to look for files
+DIRNAME = '/path/to/directory/BNC2014_BabyPlus_MDA'
+
+# find all the .txt files in the directory
+filenames = glob(path.join(DIRNAME, '.txt'))
+
+
+for text in filenames:
+    txtPATH = os.path.join('/path/to/directory/BNC2014_BabyPlus_MDA', text)
+    txtPATH=str(txtPATH)
+    
+
+    f = open(txtPATH, 'rb')
+    data = f.read()
+    f_charInfo = chardet.detect(data)
+    coding2=f_charInfo['encoding']
+    coding=str(coding2)
+    print(coding)
+    data = f.read()
+
+
+    if not re.match(r'.*\.utf-8$', coding, re.IGNORECASE): 
+        print(txtPATH)
+        print(coding)
+
+    with codecs.open(txtPATH, "r", coding) as sourceFile:
+            contents = sourceFile.read()
+            
+            
+    with codecs.open(txtPATH, "w", "utf-8") as targetFile:              
+                targetFile.write(contents)
+```
+
+## Written BNC2014 Baby+ checks for text length
+
+```{r written-BNC2014Baby+}
+
+# Import files of BNC2014 baby+ (this is a tm function)
+corpus <- Corpus(DirSource(directory = here("data", "BNC2014_BabyPlus_MDA"), 
+                           pattern="*.txt"))
+
+# Check number of texts in subcorpora
+corpus 
+
+# Check data sanity
+inspect(corpus[[1300]])
+utf8_valid(content(corpus[[1]]))
+
+# Find out how many words each text has
+dtm <- DocumentTermMatrix(corpus)
+wordcount <- rowSums(as.matrix(dtm)) %>% as.data.frame()
+
+wordcount2 <- wordcount %>% 
+  rownames_to_column(var = "fileID") %>% 
+  rename(totalwords = ".") %>% 
+  #mutate(subregister = (as.factor(stringr::str_extract(fileID, "SocFb|SocTw")))) %>% 
+  mutate(subregister = (as.factor(stringr::str_extract(fileID, "Acj|AcbH|AcbM|AcbN|AcbP|AcbS|AcbT|Fict|Mass|Reg|Ser|Em|Bl|ERe|SocTw|SocFb|For|Sm")))) %>% 
+  mutate(subregister = as.factor(ifelse(is.na(subregister), "Sp", as.character(subregister))))
+
+summary(wordcount2)
+levels(wordcount2$subregister)
+
+wordcount2 %>% 
+  group_by(subregister) %>% 
+  summarise(texts = length(totalwords), min = min(totalwords), max = max(totalwords), words = sum(totalwords))
+
+```
+
+## Cleaning: Academic, fiction and news subcorpora
+
+```{r academic-news-fiction-BNC2014Baby+}
+
+# Import the academic and news texts from the written BNC2014 baby+
+corpus <- Corpus(DirSource(directory = here("corpus", "BNC2014-baby-ac-fict-news"), 
+                           pattern="*.txt"))
+
+# Check number of texts in subcorpora
+corpus 
+
+# Check data sanity
+inspect(corpus[[1300]])
+
+# Data is messy due to OCR process, e.g.,
+inspect(corpus[["BNCBSer486.txt"]])
+inspect(corpus[["BNCBAcjH86.txt"]])
+inspect(corpus[["BNCBAcjH48.txt"]])
+inspect(corpus[["BNCBAcbH_m17.txt"]])
+inspect(corpus[["BNCBAcjT43.txt"]])
+
+# Function to clean up academic, fiction and news texts that have seemingly been OCRed
+cleanup <- function(old_text){
+  new_text1 <- gsub("(?<!\n)\n", " ", old_text, perl = TRUE) # Deals with line breaks due to original pagination
+  new_text2 <- gsub(" - ", "", new_text1) # Deals with hyphenated words at the end of lines
+  new_text3 <- gsub(" {2,}", " ", perl = TRUE, new_text2)
+  new_text4 <- str_trim(new_text3)
+  new_textfinal <- gsub(pattern="<.*?>", replacement="", new_text4, perl = TRUE) # Removes any remaining tags
+  return(new_textfinal)
+}
+
+corpusclean <- tm_map(corpus, content_transformer(cleanup))
+
+# And check that it worked:
+inspect(corpusclean[["BNCBSer486.txt"]])
+inspect(corpusclean[["BNCBAcjH86.txt"]])
+inspect(corpusclean[["BNCBAcjH48.txt"]])
+inspect(corpusclean[["BNCBAcbH_m17.txt"]])
+inspect(corpusclean[["BNCBAcjT43.txt"]])
+
+# Save newly formatted corpus files to an *existing* folder
+writeCorpus(corpusclean, path = here("BNC2014BabyPlus_clean"), filenames = NULL)
+
+
+```
+
+## Cleaning: SMS
+
+```{r SMS}
+
+# Import the academic and news texts from the written BNC2014 baby+
+corpus <- Corpus(DirSource(directory = here("corpus", "BNC2014_BabyPlus_MDA", "splitFiles"), pattern="*.txt"))
+
+# Check number of texts in subcorpora
+corpus 
+
+# Check data sanity
+inspect(corpus[[12]])
+
+# Function to SMSs
+cleanup <- function(old_text){
+  new_text1 <- gsub("([0-9]+/[0-9]+/[0-9]+, [0-9]+:[0-9]+-)|([A-Z][a-z]+, [A-Z][a-z]+ [0-9]+[a-z]+ [0-9]+, [0-9]+:[0-9]+ (a|p)m)", ". ", old_text, perl = TRUE) # Removes time stamps on SMSs
+  new_text2 <- gsub(" {2,}", " ", perl = TRUE, new_text1)
+  new_text3 <- str_trim(new_text2)
+  new_text4 <- gsub("ð|¥|Ω|¢", "", new_text3, perl = TRUE)
+  new_textfinal <- gsub(pattern="<.*?>", replacement="", new_text4, perl = TRUE) # Removes any remaining tags
+  return(new_textfinal)
+}
+
+corpusclean <- tm_map(corpus, content_transformer(cleanup))
+
+# And check that it worked:
+inspect(corpusclean[["BNCBESm3_8.txt"]])
+inspect(corpusclean[["BNCBESm3_2.txt"]])
+inspect(corpusclean[["BNCBESm15_1.txt"]])
+inspect(corpusclean[["BNCBESm18_1.txt"]])
+
+# Save newly formatted corpus files to an *existing* folder
+writeCorpus(corpusclean, path = here("BNC2014BabySMS_clean"), filenames = NULL)
+
+
+```
+
+# Pre-processing: Spoken BNC2014 (subcorpus of the full BNC2014)
+
+The full Spoken BNC2014 can be downloaded from this page after having signed the license: http://corpora.lancs.ac.uk/bnc2014/signup.php 
+
+The version of the corpus used in the following chunk is the untagged XML version.
+
+```{r spoken-BNC2014}
+
+BNC2014spoken <- here("corpus", "BNC2014spokenuntagged")
+corpus <- Corpus(DirSource(directory = BNC2014spoken, pattern="*.xml"))
+
+#### Function to replace all meta-tags from untagged XML version of Spoken BNC2014 corpus ####
+
+remove_tags <- function(old_text){
+  new_text <- gsub(pattern="<header>.*</header>", replacement="", old_text) # Deletes entire header #
+  new_text1 <- gsub("<anon type=\"name\" nameType=\"m\"/>", "John", new_text) # Replaces all male names John #
+  new_text2 <- gsub("<anon type=\"name\" nameType=\"f\"/>", "Jill", new_text1) # Replaces all female names with Jill #
+  new_text3 <- gsub("<anon type=\"name\" nameType=\"n\"/>", "Sam", new_text2) # Replaces all neutral names with Sam #
+  new_text4 <- gsub("<anon type=\"place\"/>", "IVYBRIDGE", new_text3) # Replaces all anonamised place names with IVYBRIDGE #
+  new_text5 <- gsub("<anon type=\"telephoneNumber\"/>", "0123456789", new_text4)
+  new_text6 <- gsub("<anon type=\"address\"/>", "ADDRESS", new_text5)
+  new_text7 <- gsub("<anon type=\"email\"/>", "anonemail@email.com", new_text6)
+  new_text8 <- gsub("(?<!\\?)</u>", ".", new_text7, perl = TRUE) # Unless there is a questions mark at the end of the utterance, add a full stop. This is to help POS-taggers and dependency parsers
+  new_text8b <- gsub("<trunc>.{0,12}</trunc>", "", new_text8) # Remove all truncated words
+  new_text8c <- gsub("<anon type=\"financialDetails\"/>", "FINANCIAL DETAILS", new_text8b)
+  new_text8d <- gsub("<anon type=\"socialMediaName\"/>", "@SAM", new_text8c)
+  new_text8e <- gsub("<anon type=\"dateOfBirth\"/>", "DOB", new_text8d)
+  new_text8f <- gsub("<anon type=\"miscPersonalInfo\"/>", "PERSONAL INFORMATION", new_text8e)                  
+  new_text9 <- gsub(pattern="<.*?>", replacement="", new_text8f) # Removes all remaining tags
+  new_text10 <- str_replace_all(new_text9, pattern = "[[:space:]]{2,}", replacement = " ")
+  new_text11 <- str_replace_all(new_text10, pattern = "\n\\.", replacement = "\n")
+  new_text12 <- str_replace_all(new_text11, pattern ="[[:space:]]\\.", replacement = ".")
+  new_text13 <- str_replace_all(new_text12, pattern ="\\?\\.", replacement = "?")
+  new_textfinal <- str_trim(new_text13)
+  return(new_textfinal)
+}
+
+corpus <- tm_map(corpus, content_transformer(remove_tags))
+
+# And check that it worked.
+inspect(corpus[["S2A5.xml"]])
+
+# Save newly formatted corpus files to an *existing* folder
+writeCorpus(corpus, path = here("BNC2014BabyPlus_clean"), filenames = NULL)
+
+### Remember to change file extensions as the files are now .xml.txt ###
+
+```
+
+# Pre-processing: Fiction to reduce text length
+
+```{python shorten-texts}
+
+from glob import glob
+import os
+from os import path
+
+import regex
+
+# %% parameters
+
+# path to directory in which to look for files
+DIRNAME = 'path/to/directory/BNC2014_BabyPlus_MDA'
+
+# file encoding
+ENCODING = 'utf-8'
+
+# number of words in each chunk
+CHUNK_LENGTH = 3000
+
+# %% setup
+
+# regular expression for a word boundary
+# whitespace character preceded by non-whitespace character
+# see: https://regex101.com/r/zXMN8x/1
+word_boundary = regex.compile(r'(?<=\S)(?=\s)')
+
+# find all the .txt files in the directory
+filenames = glob(path.join(DIRNAME, '*Fic*.txt'))
+
+# create a new directory name for the chunked files
+new_dirname = path.join(DIRNAME, 'splitFiles')
+
+# make the directory (or skip if it exists already)
+try:
+    os.mkdir(new_dirname)
+except FileExistsError:
+    pass
+
+
+# %% main bit
+
+# go through the files one by one
+for filename in filenames:
+
+    # open and read in the contents of the file
+    with open(filename, encoding=ENCODING) as f:
+        text = f.read()
+
+    # split into words using the regular expression
+    words = word_boundary.split(text)
+
+    # calculate number of chunks
+    n_chunks = (len(words) // CHUNK_LENGTH) + 1
+
+    # for each chunk
+    for i in range(n_chunks):
+
+        # calculate start and stop position of the chunk
+        start = i * CHUNK_LENGTH
+        stop = start + CHUNK_LENGTH
+
+        # put together a new file name with the chunk number appended
+        short_filename = filename.split(os.sep)[-1][:-4]
+        chunk_filename = short_filename + '_' + str(i + 1) + '.txt'
+        new_filename = path.join(new_dirname, chunk_filename)
+
+        # open it and write in the chunk
+        with open(new_filename, mode='w', encoding=ENCODING) as f:
+            f.write(''.join(words[start:stop]))
+
+        print('written:', new_filename)
+
+```
+
+
