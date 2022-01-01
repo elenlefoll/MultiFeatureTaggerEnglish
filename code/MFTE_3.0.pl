@@ -21,13 +21,13 @@ use open IO => ':encoding(UTF-8)';
 
 die <<EOT unless @ARGV == 3 || @ARGV == 4;
 
-Multi-Feature Tagger of English (MFTE) v. 2.9
+Multi-Feature Tagger of English (MFTE) v. 3.0
 
 ***
 
 Please cite as: 
 Le Foll, Elen (2021). A Multi-Feature Tagger of English (MFTE). Software v. 3.0. 
-Available under CC-BY-SA 4.0 on: **TBC**
+Available under a GPL-3.0 License on: https://github.com/elenlefoll/MultiFeatureTaggerEnglish
 
 Code based on the Multidimensional Analysis Tagger v. 1.3 by Andrea Nini [https://sites.google.com/site/multidimensionaltagger/]:
 Nini, Andrea (2019). The Muli-Dimensional Analysis Tagger. In Berber Sardinha, T. & Veirano Pinto M. (eds), Multi-Dimensional Analysis: Research Methods and Current Issues, 67-94, London; New York: Bloomsbury Academic. 
@@ -37,15 +37,26 @@ Kristina Toutanova, Dan Klein, Christopher Manning, & Yoram Singer (2003). Featu
 
 ***
 
-Usage:  perl MFTE_2.9.pl input_txt/ tagged_txt/ prefix [TTRsize]
+Installation:
 
-The folder input_txt/ must contain the corpus texts as separate files in plain text format.  All files in the folder will be processed, regardless of their extension.  Tagged texts are stored under the same names in the folder tagged_txt/, and feature counts are extracted as TAB-separated tables:
+See readme: https://github.com/elenlefoll/MultiFeatureTaggerEnglish
 
-    <prefix>_counts.tsv   relative frequencies
+Usage:
 
-[TTRsize] may be replaced by the number of tokens for which the type-token ration is to be computed; it should be less than the shortest text in the corpus (if no value is entered the default is 400, as in Biber 1988).
+Navigate to the folder with the MFTE and the Stanford Tagger and run the MFTE_3.0.pl perl script from a terminal with the following command:
 
-Note that this script only tags and computes a count tally of all the features. It does not compute any dimensions. See corresponding .Rmd file to do so.
+perl MFTE_3.0.pl input_txt/ tagged_txt/ prefix [TTRsize]
+
+where:
+
+- input_txt stands for the folder (path) containing the text files (in UFT-8) of the corpus to be tagged. Note that the folder input_txt must contain the corpus texts as separate files in plain text format (.txt) and UTF-8 encoding. All files in the folder will be processed, regardless of their extension.
+- tagged_txt stands for the folder (path) to be created by the programme to place the tagged text files.
+- prefix stands for the prefix of the names of the three tables that will be output by the programme (see below).
+- [TTRsize] is an optional parameter that defines how many words are used to calculate the type/token ratio (TTR) variable. It should be less than the shortest text in the corpus. If no value is entered the default is 400, as in Biber (1988).
+
+Note that this script only tags and computes a count tally of all the features. It does not compute any dimensions. See corresponding .Rmd file in GitHub repository to do so.
+
+Detailed documentation available on: https://github.com/elenlefoll/MultiFeatureTaggerEnglish
 
 EOT
 

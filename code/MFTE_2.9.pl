@@ -27,7 +27,7 @@ Multi-Feature Tagger of English (MFTE) v. 2.9
 
 Please cite as: 
 Le Foll, Elen (2021). A Multi-Feature Tagger of English (MFTE). Software v. 2.9. 
-Available under CC-BY-SA 4.0 on: **TBC**
+Available under a GPL-3.0 License on: https://github.com/elenlefoll/MultiFeatureTaggerEnglish
 
 Code based on the Multidimensional Analysis Tagger v. 1.3 by Andrea Nini [https://sites.google.com/site/multidimensionaltagger/]:
 Nini, Andrea (2019). The Muli-Dimensional Analysis Tagger. In Berber Sardinha, T. & Veirano Pinto M. (eds), Multi-Dimensional Analysis: Research Methods and Current Issues, 67-94, London; New York: Bloomsbury Academic. 
