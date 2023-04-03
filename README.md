@@ -1,6 +1,9 @@
 # The Multi-Feature Tagger of English (MFTE) in Perl v.3.0 
 
-## News April 2023: An improved and extended version of the MFTE in Python is currently under development. You can install and test the beta version here: https://github.com/mshakirDr/MFTE/
+## Update
+#### An improved and extended version of the MFTE in Python is currently under development. You can install and test the beta version here: https://github.com/mshakirDr/MFTE/ (3 April 2023)
+
+## About
 
 The Multi-Feature Tagger of English (hereafter: the MFTE) is an automatic tagger for the analysis of situational variation in standard written and spoken general English. The MFTE was originally developed for use in multi-feature/multi-dimensional analysis (MDA; Biber 1984; 1988; 1995; Conrad & Biber 2013), a widely used framework first developed by Douglas Biber in the late 1980s. In short, MDA is based on the theoretical assumption that register-based variation can be observed as differences in patterns of co-occurring lexico-grammatical features, which result from texts having register-specific communicative goals and contexts of use.
 
