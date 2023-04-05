@@ -1,7 +1,7 @@
 # The Multi-Feature Tagger of English (MFTE) in Perl v.3.0 
 
 ## Update
-#### An improved and extended version of the MFTE in Python is currently under development. You can install and test the beta version here: https://github.com/mshakirDr/MFTE/ (3 April 2023)
+#### An improved and extended version of the MFTE in Python is currently under development. You can install and test the alpha version here: https://github.com/mshakirDr/MFTE/ (3 April 2023)
 
 ## About
 
