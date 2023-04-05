@@ -49,7 +49,7 @@ Feature counts are extracted as TAB-separated tables. Each row corresponds to a 
 2.	```[prefix]_normed_100words_counts.tsv```            Feature frequencies normalised to 100 words
 3.	```[prefix]_raw_counts.tvs```                         Raw (unnormalised) feature counts
 
-Note that the MFTE only tags and computes count tallies of all the features. It does not compute perform the multi-variate analysis itself. R scripts to carry out MDA analysis using EFA and PCA on the basis of the outputs of the MFTE will soon be added to this repository.
+Note that the MFTE only tags and computes count tallies of all the features. It does not compute perform the multidimensional analysis itself. R scripts to carry out MDA analysis using EFA and PCA on the basis of the outputs of the MFTE will soon be added to this repository.
 
 ## Documentation
 
